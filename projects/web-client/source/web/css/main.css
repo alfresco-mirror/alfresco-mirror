@@ -1,0 +1,340 @@
+table.moduletable td
+{
+	font-family: Tahoma, Arial, Helvetica, sans-serif;
+	font-size: 11px;
+	font-weight: normal;
+}
+
+td,tr,p,div
+{
+   color: #495F69;
+	font-family: Tahoma, Arial, Helvetica, sans-serif;
+	font-size: 11px;
+	color: #495F69;
+}
+
+p.status
+{
+   margin:0px;
+   padding-left:0px;
+   padding-top:4px;
+   padding-bottom:4px;
+}
+
+a:link, a:visited
+{
+	font-size: 11px;
+	color: #495F69;
+	text-decoration: none;
+	font-family: Tahoma, Arial, Helvetica, sans-serif;
+	font-weight: normal;
+}
+
+a:hover
+{
+	color: #4272B4;
+	text-decoration: underline;
+	font-weight: normal;
+}
+
+a.path:link, a.path:visited
+{
+	font-size: 14px;
+	color: #495F69;
+	text-decoration: none;
+	font-weight: normal;
+}
+
+a.path:hover
+{
+   font-size: 14px;
+	color: #4272B4;
+	text-decoration: underline;
+	font-weight: normal;
+}
+
+a.header:link, a.header:visited
+{
+	font-weight: bold;
+}
+
+a.header:hover
+{
+	font-weight: bold;
+}
+
+a.title:link, a.title:visited
+{
+   font-size: 12px;
+	font-weight: bold;
+}
+
+a.title:hover
+{
+   font-size: 12px;
+	font-weight: bold;
+}
+
+a.moreactions:link, a.moreactions:visited
+{
+   vertical-align: 30%;
+	font-size: 10px;
+}
+
+a.moreactions:hover
+{
+   vertical-align: 30%;
+	font-size: 10px;
+}
+
+a.small:link, a.small:visited
+{
+   font-weight: normal;
+   color: #495F69;
+}
+
+a.small:hover
+{
+   font-weight: normal;
+   color: #4272B4;
+}
+
+.pageTitle
+{
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   color: #495F69;
+   font-size: 14px;
+}
+
+.main
+{
+   color: #495F69;
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   font-size: 11px;
+}
+
+.mainTitle
+{
+   color: #495F69;
+   font-family: Arial, Helvetica, sans-serif;
+   font-size: 16px;
+   font-weight: bold;
+   vertical-align: middle;
+}
+
+.mainSubTitle
+{
+   color: #495F69;
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   font-size: 11px;
+   font-weight: bold;
+}
+
+.mainSubText
+{
+   color: #495F69;
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   font-size: 11px;
+   padding: 2px;
+}
+
+.mainSubTextLarge
+{
+   color: #495F69;
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   font-size: 12px;
+}
+
+a.headbarLink
+{
+   color: #495F69;
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   font-size: 11px;
+   font-weight: normal;
+}
+
+.headbarTitle
+{
+   color: #495F69;
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   font-size: 11px;
+   font-weight: bold;
+   margin-bottom: 5px;
+}
+
+.mainSubTextSmall
+{
+   color: #495F69;
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   font-size: 10px;
+}
+
+.moreActionsMenu
+{
+   background-color: #eeeeee;
+   border-top: thin solid #FFFFFF;
+   border-left: thin solid #FFFFFF;
+   border-right: thin solid #444444;
+   border-bottom: thin solid #444444;
+}
+
+.welcomeHeader
+{
+   background-color: #eeeeee;
+   border-top: thin solid #666666;
+   border-bottom: thin solid #cccccc;
+}
+
+.headerTopActions
+{
+   background-color: #CCCCCC;
+   border-top: thin solid #FFFFFF;
+   border-bottom: thin solid #999999;
+}
+
+.headerMainActions
+{
+   background-color: #CCCCCC;
+   border-top: thin solid #FFFFFF;
+   border-bottom: thin solid #999999;
+}
+
+.headerTopDetail
+{
+   background-color: #EEEEEE;
+   border-top: thin solid #FFFFFF;
+   border-bottom: thin solid #999999;
+}
+
+.headerTopDetailNoActions
+{
+   background-color: #EEEEEE;
+   border-top: thin solid #FFFFFF;
+   border-bottom: thin solid #999999;
+}
+
+.contentsListActions
+{
+   background-color: #FFFFFF;
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   font-size: 11px;
+}
+
+.infoText
+{
+   background-color: #FFFFCC;
+   color: #1B3557;
+}
+
+.recordSet
+{
+   width: 100%;
+}
+
+.recordSetRow
+{
+   background-color: #EEF3F8;
+}
+
+.recordSetRowAlt
+{
+   background-color: #FFFFFF;
+}
+
+.recordSetHeader
+{
+   background-color: #C6D8EB;
+   color: #1B3557;
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   font-weight: bold;
+}
+
+.recordSetCell
+{
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+}
+
+.errorMessage
+{
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   font-size: 11px;
+   color: #e00028;
+   padding: 4px;
+}
+
+.userInputForm
+{
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   font-size: 10px;
+}
+
+.dialogControls
+{
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   font-size: 11px;
+}
+
+.dialogButtonSpacing
+{
+	height: 5px;
+}
+
+.topToolbar
+{
+   background-color:#5D747F;
+}
+
+a.topToolbarLink
+{
+   color:#ffffff;
+   font-weight: bold;
+}
+
+.topToolbarHighlight
+{
+   background-color:#FFFFFF;
+   border:solid #5D6B71;
+   border-width:1px;
+}
+
+a.topToolbarLinkHighlight
+{
+   color:#5D747F;
+   font-weight: bold;
+}
+
+.statusListHighlight
+{
+   background-color:#FFFFFF;
+   border:solid #71828A;
+   border-width:1px;
+}
+
+.inlineAction
+{
+   padding-right:4px;
+}
+
+.paddingRow
+{
+   padding-top: 3px;
+}
+
+.wizardSectionHeading
+{
+   padding: 2px;
+   background-color: #cddbe8;
+   font-weight: bold;
+}
+
+.wizardButton
+{
+   font-family: Tahoma, Arial, Helvetica, sans-serif;
+   font-size: 11px;
+}
+
+.wizardButtonSpacing
+{
+	height: 5px;
+}
+

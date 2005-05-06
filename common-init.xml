@@ -1,0 +1,21 @@
+<project name="common-init">
+   
+   <!-- *************************** -->
+   <!-- ** Common initialisation ** -->
+   <!-- *************************** -->
+
+   <target name="common-init">
+      <tstamp>
+         <format property="time" pattern="HH:mm"/>
+      </tstamp>
+
+      <property environment="env" />
+      <property file="${user.home}/user-override.properties" />
+      <property file="project-override.properties" />
+      <property file="${common.dir}/common.properties" />
+      <property file="project.properties" />
+
+      <echo>${startup.message}</echo>
+   </target>
+
+</project>

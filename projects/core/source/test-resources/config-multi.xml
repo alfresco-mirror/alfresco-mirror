@@ -1,0 +1,18 @@
+<alfresco-config>
+
+   <plug-ins>
+      <evaluators>
+         <evaluator id="object-type" class="org.alfresco.config.evaluator.ObjectTypeEvaluator" />
+      </evaluators>
+   </plug-ins>
+   
+   <config>
+      <another-global-item>Another global value</another-global-item>
+      <override>true</override>
+   </config>
+   
+   <config evaluator="object-type" condition="java.lang.String">
+      <another-item>Another value</another-item>
+   </config>
+   
+</alfresco-config>

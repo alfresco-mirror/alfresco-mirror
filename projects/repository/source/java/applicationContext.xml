@@ -1,0 +1,635 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE beans PUBLIC '-//SPRING//DTD BEAN//EN' 'http://www.springframework.org/dtd/spring-beans.dtd'>
+ 
+<!-- This file must be split up once the number and spread of beans increases -->
+<beans>
+   
+   <!--                    -->
+   <!--  PERSISTENCE       -->
+   <!--                    -->
+   
+   <!-- load common properties -->
+   <bean id="db-properties" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+      <property name="location">
+         <value>classpath:db.properties</value>
+      </property>
+   </bean>
+   
+   <!-- Datasource bean -->
+   <bean id='dataSource' class='org.apache.commons.dbcp.BasicDataSource'
+         destroy-method='close'>
+      <property name='driverClassName'>
+         <value>${db.driver}</value>
+      </property>
+      <property name='url'>
+         <value>${db.url}</value>
+      </property>
+      <property name='username'>
+         <value>${db.username}</value>
+      </property>
+      <property name='password'>
+         <value>${db.password}</value>
+      </property>
+   </bean>
+   
+   <bean id='sessionFactory' class='org.springframework.orm.hibernate3.LocalSessionFactoryBean'>
+      <property name='dataSource' >
+         <ref local='dataSource' />
+      </property>
+      <property name='mappingResources' >
+         <list>
+            <value>com/alfresco/repo/domain/hibernate/Node.hbm.xml</value>
+            <value>com/alfresco/repo/domain/hibernate/Store.hbm.xml</value>
+         </list>
+      </property>
+      <property name='hibernateProperties' >
+         <props>
+            <prop key='hibernate.jdbc.use_streams_for_binary'>true</prop>
+            <prop key='hibernate.dialect' >org.hibernate.dialect.MySQLDialect</prop>
+            <prop key='hibernate.show_sql'>false</prop>
+            <prop key='hibernate.hbm2ddl.auto'>update</prop>
+            <prop key='hibernate.cache.use_query_cache'>true</prop>
+            <prop key='hibernate.max_fetch_depth'>1</prop>
+            <prop key='hibernate.cache.provider_class'>org.hibernate.cache.EhCacheProvider</prop>
+         </props>
+      </property>
+   </bean>
+   
+   <!-- create a transaction manager to handle the Hibernate sessions -->
+   <bean id="transactionManager" 
+      class="org.alfresco.repo.search.transaction.LuceneTransactionManager">
+      <property name="sessionFactory">
+         <ref local="sessionFactory"/>
+      </property>
+      <property name="luceneIndexerAndSearchFactory">
+         <ref bean="luceneIndexerAndSearcherFactory"/>
+      </property>
+   </bean>
+   
+   <!-- factory for UserTransaction instances -->
+   <bean id="userTransaction" class="org.alfresco.util.transaction.UserTransactionFactory">
+      <constructor-arg>
+         <ref bean="transactionManager" />
+      </constructor-arg>
+      <property name="singleton">
+         <value>false</value>
+      </property>
+   </bean>
+   
+   <!-- use around method calls to debug - see class comments for details -->
+   <bean id="methodCallLogAdvice" class="org.alfresco.util.debug.MethodCallLogAdvice" />
+   
+   <!--                    -->
+   <!--  INTERNAL SERVICES -->
+   <!--                    -->
+   
+   <bean id='nodeDaoService' class='org.springframework.transaction.interceptor.TransactionProxyFactoryBean'>
+      <property name='proxyInterfaces'>
+         <value>org.alfresco.repo.node.db.NodeDaoService</value>
+      </property>
+      <property name='transactionManager'>
+         <ref bean="transactionManager"/>
+      </property>
+      <property name="target">
+         <bean class="org.alfresco.repo.node.db.hibernate.HibernateNodeDaoServiceImpl" >
+            <property name="sessionFactory">
+               <ref bean="sessionFactory" />
+            </property>
+            <property name="dictionaryService">
+               <ref bean="dictionaryService" />
+            </property>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+      <property name="postInterceptors">
+         <list>
+            <ref bean="methodCallLogAdvice" />
+            <bean class="org.alfresco.util.perf.PerformanceMonitorAdvice" init-method="init" >
+               <constructor-arg>
+                  <value>nodeDaoService</value>
+               </constructor-arg>
+            </bean>
+         </list>
+      </property>
+   </bean>   
+   
+   <!--                    -->
+   <!--  PUBLIC SERVICES   -->
+   <!--                    -->
+   
+   <!-- NodeService implemented to persist to Database -->
+   <bean id="dbNodeService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.node.NodeService</value>
+      </property>
+      <property name="transactionManager">
+         <ref bean="transactionManager"/>
+      </property>
+      <property name="target">
+         <bean class="org.alfresco.repo.node.db.DbNodeServiceImpl">
+            <constructor-arg>
+               <ref bean="dictionaryService" />
+            </constructor-arg>
+            <constructor-arg>
+               <ref bean="nodeDaoService" />
+            </constructor-arg>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+      <property name="postInterceptors">
+         <list>
+            <ref bean="methodCallLogAdvice" />
+            <bean class="org.alfresco.util.perf.PerformanceMonitorAdvice" init-method="init" >
+               <constructor-arg>
+                  <value>dbNodeService</value>
+               </constructor-arg>
+            </bean>
+         </list>
+      </property>
+   </bean>   
+   
+   <!-- NodeService implemented to call a delegate and ensure that nodes get indexed -->
+   <!-- TODO: To be replaced by use of callbacks using policy framework -->
+   <bean id="indexingNodeService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.node.NodeService</value>
+      </property>
+      <property name="transactionManager">
+         <ref bean="transactionManager"/>
+      </property>
+      <property name="target">
+         <bean class="org.alfresco.repo.node.index.IndexingNodeServiceImpl">
+            <constructor-arg>
+               <ref bean="dbNodeService" />
+            </constructor-arg>
+            <constructor-arg>
+               <ref bean="indexerComponent" />
+            </constructor-arg>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+   </bean>
+      
+   <bean id="contentService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.content.ContentService</value>
+      </property>
+      <property name="transactionManager">
+         <ref bean="transactionManager"/>
+      </property>
+      <property name="target">
+         <bean class="org.alfresco.repo.content.RoutingContentServiceImpl" >
+            <constructor-arg>
+               <ref bean="indexingNodeService" />
+            </constructor-arg>
+            <constructor-arg>
+               <value>c:/contentstore</value>
+            </constructor-arg>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED,readOnly</prop>
+         </props>
+      </property>
+   </bean>
+      
+   <!--                         -->
+   <!-- Indexing and Search API -->
+   <!--                         -->
+      
+   <bean id="indexerComponent" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.search.Indexer</value>
+      </property>
+      <property name="transactionManager">
+         <ref bean="transactionManager"/>
+      </property>
+      <property name="target">
+         <bean class="org.alfresco.repo.search.IndexerComponent" >
+            <property name="indexerAndSearcherFactory">
+               <ref bean="indexerAndSearcherFactory"/>
+            </property>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+      <property name="postInterceptors">
+         <list>
+            <ref bean="methodCallLogAdvice" />
+            <bean class="org.alfresco.util.perf.PerformanceMonitorAdvice" init-method="init" >
+               <constructor-arg>
+                  <value>indexerComponent</value>
+               </constructor-arg>
+            </bean>
+         </list>
+      </property>
+   </bean>
+   
+   <bean id="searcherComponent" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.search.Searcher</value>
+      </property>
+      <property name="transactionManager">
+         <ref bean="transactionManager"/>
+      </property>
+      <property name="target">
+         <bean class="org.alfresco.repo.search.SearcherComponent" >
+            <property name="indexerAndSearcherFactory">
+               <ref bean="indexerAndSearcherFactory"/>
+            </property>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+   </bean>
+   
+
+   <!--                                                                               -->
+   <!-- Generic factory for making indexers and searchers for a given protol or store -->
+   <!--                                                                               -->
+
+   
+   <bean id="indexerAndSearcherFactory" 
+      class="org.alfresco.repo.search.IndexerAndSearcherFactory">
+      <property name="protocolFactories">
+         <map>
+            <entry key="workspace">
+               <ref bean="luceneIndexerAndSearcherFactory"></ref>
+            </entry>
+            <entry key="versionStore">
+               <ref bean="luceneIndexerAndSearcherFactory"></ref>
+            </entry>
+         </map>
+      </property>
+   </bean>
+   
+
+     <!-- Indexer and searchers for lucene -->
+    <bean id="luceneIndexerAndSearcherFactory" 
+        class="org.alfresco.repo.search.impl.lucene.LuceneIndexerAndSearcherFactory">
+        <property name="nodeService">
+            <ref bean="dbNodeService"/>
+        </property>
+        <property name="dictionaryService">
+            <ref bean="dictionaryService"/>
+        </property>
+        <property name="nameSpaceService">
+            <ref bean="namespaceService"/>
+        </property>
+        <property name="luceneIndexLock">
+            <ref bean="luceneIndexLock"/>
+        </property>
+        <property name="luceneFullTextSearchIndexer">
+            <ref bean="LuceneFullTextSearchIndexer"/>
+        </property>
+    </bean>
+    
+    <!-- Support for locking lucene indexes for deletion and update -->
+    
+    <bean id="luceneIndexLock" class="org.alfresco.repo.search.transaction.LuceneIndexLock">
+	</bean>
+    
+ 
+   <!--                               -->
+   <!--  Simple Lock Service           -->
+   <!--                               -->
+   
+   <bean id='simpleLockService' class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.lock.LockService</value>
+      </property>
+      <property name="transactionManager">
+         <ref bean="transactionManager"/>
+      </property>
+      <property name="target">
+         <bean class="org.alfresco.repo.lock.simple.SimpleLockService" init-method="initialise">
+            <property name="nodeService">
+               <!-- TODO This should point to the general node service -->	
+               <ref bean="dbNodeService" />
+            </property>         
+			<property name="policyRuntimeService">
+				<ref bean="policyRuntimeService"></ref>
+			</property>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+   </bean>
+   
+   <!--                               -->
+   <!--  Light Weight Version Store   -->
+   <!--                               -->
+   
+   
+   <bean id='lightWeightVersionStoreVersionService' class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.version.VersionService</value>
+      </property>
+      <property name="transactionManager">
+         <ref bean="transactionManager"/>
+      </property>
+      <property name="target">
+         <bean class="org.alfresco.repo.version.lightweight.VersionServiceImpl" init-method="initialise">
+             <property name="nodeService">
+             <!-- TODO This should point to the general node service -->	
+               <ref bean="dbNodeService" />
+             </property>
+         	 <property name="dbNodeService">
+				   <ref bean="dbNodeService" />
+			 </property>
+			 <property name="contentService">
+				<ref bean="contentService" />
+			 </property>			 	
+			 <property name="versionContentStore">
+				<ref bean="lightWeightVersionStoreContentStore"/>
+			 </property>
+			 <property name="versionCounterDaoService">
+				<ref bean="versionCounterDaoService"/>
+			 </property>
+			 <property name="searcher">
+				<ref bean="searcherComponent"/>
+			 </property>		 
+			 <property name="dictionaryService">
+			   <ref bean="dictionaryService" />
+			 </property>
+			 <property name="policyDefinitionService">
+				<ref bean="policyDefinitionService"/>
+			 </property>
+			 <property name="policyRuntimeService">
+				<ref bean="policyRuntimeService"/>
+			 </property>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+   </bean>
+   
+   <bean id='lightWeightVersionStoreNodeService' class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.node.NodeService</value>
+      </property>
+      <property name="transactionManager">
+         <ref bean="transactionManager"/>
+      </property>
+      <property name="target">
+         <bean class="org.alfresco.repo.version.lightweight.NodeServiceImpl" init-method="initialise">
+			 <property name="nodeService">
+				<!-- TODO This should point to the general node service -->	
+				<ref bean="dbNodeService" />
+			 </property>
+			 <property name="dbNodeService">
+				<ref bean="dbNodeService" />
+			 </property>
+			 <property name="searcher">
+				<ref bean="searcherComponent"/>
+			 </property>		 
+			 <property name="dictionaryService">
+			   <ref bean="dictionaryService" />
+			 </property>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+   </bean>
+   
+   <bean id='lightWeightVersionStoreContentService' class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.content.ContentService</value>
+      </property>
+      <property name="transactionManager">
+         <ref bean="transactionManager"/>
+      </property>
+      <property name="target">
+         <bean class="org.alfresco.repo.version.lightweight.ContentServiceImpl">
+			 <property name="dbNodeService">
+				<ref bean="dbNodeService" />
+			</property>	
+			<property name="versionContentStore">
+				<ref bean="lightWeightVersionStoreContentStore"/>
+			</property>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+   </bean>
+   
+   <bean id='lightWeightVersionStoreContentStore' class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.content.ContentStore</value>
+      </property>
+      <property name="transactionManager">
+         <ref bean="transactionManager"/>
+      </property>
+      <property name="target">
+         <bean class="org.alfresco.repo.content.filestore.FileContentStoreImpl">
+			 <constructor-arg>
+				<value>c:\VersionedContent</value>
+             </constructor-arg>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+   </bean>
+   
+   
+   
+   <bean id='versionCounterDaoService' class='org.springframework.transaction.interceptor.TransactionProxyFactoryBean'>
+      <property name='proxyInterfaces'>
+         <value>org.alfresco.repo.version.common.counter.VersionCounterDaoService</value>
+      </property>
+      <property name='transactionManager'>
+         <ref bean="transactionManager"/>
+      </property>
+      <property name="target">
+         <bean class="org.alfresco.repo.version.common.counter.db.DbVersionCounterDaoServiceImpl" init-method="initialise">
+            <property name="dataSource">
+               <ref bean="dataSource" />
+            </property>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRES_NEW</prop>
+         </props>
+      </property>
+   </bean>
+   
+   <!--                 -->
+   <!-- Data Dictionary -->
+   <!--                 -->
+   
+   <bean id="emfResource" class="org.alfresco.repo.dictionary.metamodel.emf.EMFResource" init-method="init">
+   </bean>
+   
+   <bean id="metaModelDAO" class="org.alfresco.repo.dictionary.metamodel.emf.EMFMetaModelDAO" init-method="init">
+      <property name='resource'><ref bean="emfResource"/></property>
+   </bean>
+   
+   <bean id="namespaceDAO" class="org.alfresco.repo.dictionary.metamodel.emf.EMFNamespaceDAO" init-method="init">
+      <property name='resource'><ref bean="emfResource"/></property>
+   </bean>
+   
+   <bean id="dictionaryService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.dictionary.DictionaryService</value>
+      </property>
+      <property name="transactionManager"><ref bean="transactionManager"/></property>
+      <property name="target">
+         <bean class="org.alfresco.repo.dictionary.service.DictionaryComponent" >
+            <property name="metaModelDAO"><ref bean="metaModelDAO"/></property>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+   </bean>
+   
+   <bean id="namespaceService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.dictionary.NamespaceService</value>
+      </property>
+      <property name="transactionManager"><ref bean="transactionManager"/></property>
+      <property name="target">
+         <bean class="org.alfresco.repo.dictionary.service.DictionaryNamespaceComponent" >
+            <property name="namespaceDAO"><ref bean="namespaceDAO"/></property>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+   </bean>
+   
+   <!--                 -->
+   <!-- Policy Franeworks Services -->
+   <!--                 -->
+   
+   <bean id="policyDefinitionService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.policy.PolicyDefinitionService</value>
+      </property>
+      <property name="transactionManager"><ref bean="transactionManager"/></property>
+      <property name="target">
+         <bean class="org.alfresco.repo.policy.impl.PolicyDefinitionServiceImpl">
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+   </bean>
+   
+   <bean id="policyRuntimeService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.policy.PolicyRuntimeService</value>
+      </property>
+      <property name="transactionManager"><ref bean="transactionManager"/></property>
+      <property name="target">
+         <bean class="org.alfresco.repo.policy.impl.PolicyRuntimeServiceImpl">		
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+   </bean> 
+   
+   <!-- Bean to support full text search -->
+   
+   <bean id="LuceneFullTextSearchIndexer" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+      <property name="proxyInterfaces">
+         <value>org.alfresco.repo.search.impl.lucene.fts.FullTextSearchIndexer</value>
+      </property>
+      <property name="transactionManager"><ref bean="transactionManager"/></property>
+      <property name="target">
+         <bean class="org.alfresco.repo.search.impl.lucene.fts.FullTextSearchIndexerImpl">
+            <property name="luceneIndexerAndSearcherFactory">
+               <ref bean="luceneIndexerAndSearcherFactory"/>
+            </property>
+         </bean>
+      </property>
+      <property name="transactionAttributes">
+         <props>
+            <prop key="*">PROPAGATION_REQUIRED</prop>
+         </props>
+      </property>
+   </bean>
+   
+   <!--                -->
+   <!-- Scheduled jobs -->
+   <!--                -->
+   
+    <bean id="ftsIndexerJob" 
+        class="org.springframework.scheduling.quartz.JobDetailBean">
+        <property name="jobClass">
+            <value>org.alfresco.repo.search.impl.lucene.fts.FTSIndexerJob</value>
+        </property>
+        <property name="jobDataAsMap">
+            <map>
+                <entry key="bean">
+                    <ref bean="LuceneFullTextSearchIndexer"/>
+                </entry>
+            </map>
+        </property>
+    </bean>
+   
+   <bean id="ftsIndexerTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerBean">
+        <property name="jobDetail">
+            <ref local="ftsIndexerJob"/>
+        </property>
+        <property name="startDelay">
+            <value>10000</value>
+        </property>
+        <property name="repeatInterval">
+            <value>10000</value>
+        </property>
+   </bean>
+   
+   <bean id="scedulerFactory" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+    <property name="triggers">
+        <list>
+            <ref local="ftsIndexerTrigger"/>
+        </list>
+    </property>
+   </bean>
+
+</beans>

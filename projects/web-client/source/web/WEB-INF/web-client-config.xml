@@ -1,0 +1,23 @@
+<alfresco-config>
+   
+   <plug-ins>
+      <evaluators>
+         <evaluator id="type-name" class="jsftest.repository.TypeNameEvaluator" />
+         <evaluator id="aspect" class="org.alfresco.web.config.AspectEvaluator" />
+      </evaluators>
+   </plug-ins>
+   
+   <!--
+   <config evaluator="string-compare" condition="wizard:new-space">
+      <wizard>
+         <steps>
+            <step id="1">
+               <page>/jsp/wizard/new-space/create-from.jsp</page>
+               <title>Choose how you want to create your space.</title>
+            </step>
+         </steps>
+      </wizard>
+   </config>
+   -->
+   
+</alfresco-config>

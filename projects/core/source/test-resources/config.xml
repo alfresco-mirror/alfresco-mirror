@@ -1,0 +1,13 @@
+<alfresco-config>
+   
+   <config>
+      <global-item>The global value</global-item>
+      <override>false</override>
+   </config>
+   
+   <config evaluator="string-compare" condition="Unit Test">
+      <item>The value</item>
+      <override>true</override>
+   </config>
+   
+</alfresco-config>
